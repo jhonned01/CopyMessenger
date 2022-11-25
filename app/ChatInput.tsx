@@ -1,10 +1,17 @@
 "use client";
 import React, { FormEvent, useState } from "react";
+import { v4 as uuid } from "uuid";
+import { Message } from "../typings";
+import fetcher from "../utils/fetcherMessages";
+import useSWR from "swr";
 
 const ChatInput = () => {
   const [Input, setInput] = useState("");
+  const { data: messages, error, mutate } = useSWR("/api/getMessages", fetcher);
 
-  const addMessage = (e: FormEvent<HTMLFormElement>) => {
+  console.log(messages);
+
+  const addMessage = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
     if (!Input) return;
@@ -12,6 +19,34 @@ const ChatInput = () => {
     const messageToSend = Input;
 
     setInput("");
+    const id = uuid();
+    const message: Message = {
+      id,
+      message: messageToSend,
+      created_at: Date.now(),
+      username: "jhonned01",
+      profilePic: "https://avatars.githubusercontent.com/u/2254731?v=4",
+      email: "jhonned01@gmail.com",
+    };
+
+    const uploadMessageToUpstash = async () => {
+      const data = await fetch("/api/addMessage", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message,
+        }),
+      }).then((res) => res.json());
+
+      return [data.message, ...messages!];
+    };
+
+    await mutate(uploadMessageToUpstash, {
+      optimisticData: [message, ...messages!],
+      rollbackOnError: true,
+    });
   };
   return (
     <form
