@@ -1,10 +1,11 @@
+import { unstable_getServerSession } from "next-auth";
 import Image from "next/image";
 import Link from "next/link";
 import React from "react";
 import LogoutButton from "./LogoutButton";
 
-const Header = () => {
-  const session = true;
+const Header = async () => {
+  const session = await unstable_getServerSession();
 
   if (session) {
     return (
@@ -19,7 +20,7 @@ const Header = () => {
           />
           <div>
             <p className="text-blue-400"> Logged in as:</p>
-            <p> jhonned01</p>
+            <p> {session?.user?.name}</p>
           </div>
         </div>{" "}
         <LogoutButton />

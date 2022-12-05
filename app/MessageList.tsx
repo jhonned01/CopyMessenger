@@ -6,7 +6,11 @@ import { Message } from "../typings";
 import MessageComponent from "./MessageComponent";
 import { clientPusher } from "../pusher";
 
-const MessageList = () => {
+type Props = {
+  initialMessage: Message[];
+};
+
+const MessageList = ({ initialMessage }: Props) => {
   const {
     data: messages,
     error,
@@ -16,7 +20,9 @@ const MessageList = () => {
   useEffect(() => {
     const channel = clientPusher.subscribe("messages");
     channel.bind("newMessage", async (data: Message) => {
-      console.log("new message >>>>", data);
+      // if you send the message , no need update cache
+      if (messages?.find((message) => message.id === data.id)) return;
+
       if (!messages) {
         mutate(fetcher);
       } else {
@@ -26,11 +32,15 @@ const MessageList = () => {
         });
       }
     });
+    return () => {
+      channel.unbind_all();
+      channel.unsubscribe();
+    };
   }, [messages, mutate, clientPusher]);
 
   return (
     <div className="space-y-5 px-5 pb-32 max-w-2xl xl:max-w-4xl mx-auto">
-      {messages?.map((message) => (
+      {(messages || initialMessage)?.map((message) => (
         <MessageComponent key={message.id} mesagge={message} />
       ))}
     </div>
